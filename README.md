@@ -97,10 +97,57 @@ kubectl -n wazuh get secret dashboard-cred -o json | jq -r '.data.password' | ba
 ### Wazuh Server (For connecting agents)
 WAZUH_MANAGER:
 ```shell
-kubectl -n wazuh get svc wazuh-workers -o json | jq -r '.status.loadBalancer.ingress[].ip'
+export WAZUH_MANAGER=$(kubectl -n wazuh get svc wazuh-workers -o json | jq -r '.status.loadBalancer.ingress[].ip')
 ```
 
 WAZUH_REGISTRATION_PASSWORD:
 ```shell
-kubectl -n wazuh get secret wazuh-authd-pass -o json | jq -r '.data."authd.pass"' | base64 -d
+export WAZUH_REGISTRATION_PASSWORD=$(kubectl -n wazuh get secret wazuh-authd-pass -o json | jq -r '.data."authd.pass"' | base64 -d)
+```
+
+### Wazuh Agents Registration
+
+```shell
+cd terraform/linode_instances
+```
+
+```shell
+export TF_VAR_token=aabb...9900
+```
+
+```shell
+export TF_VAR_wazuh_manager=$WAZUH_MANAGER
+export TF_VAR_wazuh_registration_password=$WAZUH_REGISTRATION_PASSWORD
+export TF_VAR_wazuh_registration_server=$(kubectl -n wazuh get svc wazuh -o json | jq -r '.status.loadBalancer.ingress[].ip')
+```
+
+```shell
+terraform init
+```
+
+```shell
+terraform plan -var-file="terraform.tfvars"
+```
+
+```shell
+terraform apply -var-file="terraform.tfvars"
+```
+
+### Wazuh Agents Deregistration
+```shell
+AGENTS=001,002,003
+```
+
+```shell
+export WAZUH_API_IP=$(kubectl -n wazuh get svc wazuh -o json | jq -r '.status.loadBalancer.ingress[].ip')
+export WAZUH_API_USERNAME=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.username' | base64 -d)
+export WAZUH_API_PASSWORD=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.password' | base64 -d)
+```
+
+```shell
+TOKEN=$(curl -u "$WAZUH_API_USERNAME:$WAZUH_API_PASSWORD" -k -X GET "https://$WAZUH_API_IP:55000/security/user/authenticate?raw=true")
+```
+
+```shell
+curl -k -X DELETE "https://$WAZUH_API_IP:55000/agents?pretty=true&older_than=0s&agents_list=$AGENTS$&status=all" -H  "Authorization: Bearer $TOKEN"
 ```
