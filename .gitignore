@@ -1,0 +1,4 @@
+.terraform
+lke-cluster-config.yaml
+terraform.tfstate
+terraform.tfstate.backup
