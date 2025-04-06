@@ -47,7 +47,7 @@ export KUBE_VAR=`terraform output kubeconfig` && echo $KUBE_VAR | base64 -di > l
 ```
 
 ```shell
-export KUBECONFIG=lke-cluster-config.yaml
+export KUBECONFIG=$(realpath lke-cluster-config.yaml)
 ```
 
 Now you'll be able to interact with the K8s cluster.
@@ -58,11 +58,49 @@ kubectl get nodes
 
 #### Destroy LKE Cluster
 ```shell
-terraform destroy"
+terraform destroy
 ```
 
 ### Wazuh K8s
 
+Generate certs for indexer and dashboard.
+```shell
+./kubernetes/wazuh/base/certs/dashboard_http/generate_certs.sh
+./kubernetes/wazuh/base/certs/indexer_cluster/generate_certs.sh
+```
+
 ```shell
 kubectl apply -k kubernetes/wazuh/lke/
+```
+
+## Access
+### Wazuh Dashboard
+
+Get Dashboard URL:
+```shell
+export WAZUH_DASHBOARD_IP=$(kubectl -n wazuh get svc dashboard -o json | jq -r '.status.loadBalancer.ingress[].ip')
+export WAZUH_DASHBOARD_PORT=$(kubectl -n wazuh get svc dashboard -o json | jq -r '.spec.ports[].port')
+```
+
+```shell
+echo "https://$WAZUH_DASHBOARD_IP:$WAZUH_DASHBOARD_PORT"
+```
+
+Dashboard credentials:
+```shell
+# Username
+kubectl -n wazuh get secret dashboard-cred -o json | jq -r '.data.username' | base64 -d
+# Password
+kubectl -n wazuh get secret dashboard-cred -o json | jq -r '.data.password' | base64 -d
+```
+
+### Wazuh Server (For connecting agents)
+WAZUH_MANAGER:
+```shell
+kubectl -n wazuh get svc wazuh-workers -o json | jq -r '.status.loadBalancer.ingress[].ip'
+```
+
+WAZUH_REGISTRATION_PASSWORD:
+```shell
+kubectl -n wazuh get secret wazuh-authd-pass -o json | jq -r '.data."authd.pass"' | base64 -d
 ```
