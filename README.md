@@ -1,5 +1,26 @@
 # wazuh-k8s
 
+## Prerequisites
+### Terraform
+Reffer to: [terraform install](https://developer.hashicorp.com/terraform/install)
+
+### Helm (for Linux x86_64/amd64)
+```shell
+curl -LO https://get.helm.sh/helm-v3.17.2-linux-amd64.tar.gz
+```
+
+```shell
+tar -zxvf helm-v3.17.2-linux-amd64.tar.gz
+```
+
+```shell
+mv linux-amd64/helm /usr/local/bin/helm
+```
+
+```shell
+helm --help
+```
+
 ## Repo Setup
 Wazuh K8s version used: v4.11.1
 Repository Tag: https://github.com/wazuh/wazuh-kubernetes/tree/v4.11.1
@@ -60,6 +81,8 @@ kubectl get nodes
 ```shell
 terraform destroy
 ```
+
+### Ningx Ingress
 
 ### Wazuh K8s
 
