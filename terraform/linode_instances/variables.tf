@@ -32,6 +32,7 @@ variable "wazuh_manager" {
 
 variable "wazuh_registration_server" {
     description = "Wazuh Registration IP/DNS for enrolling the wazuh agent"
+    default = ""
 }
 
 variable "wazuh_registration_password" {
