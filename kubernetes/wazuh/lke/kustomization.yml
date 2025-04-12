@@ -9,13 +9,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - ../base
-- ingress.yaml
-- dashboard-proxy-svc.yaml
+- ./resources/ingress.yaml
+- ./resources/dashboard-proxy-svc.yaml
 
 patches: 
-- path: storage-class.yaml
-- path: indexer-resources.yaml
-- path: wazuh-resources.yaml
-- path: dashboard-svc.yaml
-- path: wazuh-master-svc.yaml
-- path: wazuh-workers-svc.yaml
+- path: ./patches/storage-class.yaml
+- path: ./patches/indexer-resources.yaml
+- path: ./patches/wazuh-resources.yaml
+- path: ./patches/dashboard-svc.yaml
+- path: ./patches/wazuh-master-svc.yaml
+- path: ./patches/wazuh-workers-svc.yaml
