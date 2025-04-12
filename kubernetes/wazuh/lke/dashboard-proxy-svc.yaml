@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-proxy
+  namespace: ingress-nginx
+spec:
+  type: ExternalName
+  externalName: dashboard.wazuh.svc.cluster.local
+  ports:
+  - port: 443
+    targetPort: 443
+    protocol: TCP
