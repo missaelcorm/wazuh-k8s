@@ -98,6 +98,11 @@ Get default values
 helm show values ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --version $NGINX_HELM_VERSION
 ```
 
+Uninstall ingress
+```shell
+helm uninstall ingress-nginx -n ingress-nginx
+```
+
 ### Wazuh K8s
 
 Generate certs for indexer and dashboard.
