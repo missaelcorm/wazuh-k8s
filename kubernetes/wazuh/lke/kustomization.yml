@@ -18,3 +18,4 @@ patches:
 - path: wazuh-resources.yaml
 - path: dashboard-svc.yaml
 - path: wazuh-master-svc.yaml
+- path: wazuh-workers-svc.yaml
