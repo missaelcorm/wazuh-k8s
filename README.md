@@ -83,6 +83,20 @@ terraform destroy
 ```
 
 ### Ningx Ingress
+Set Helm Chart Version
+```shell
+export NGINX_HELM_VERSION=4.12.1
+```
+
+Install ingress helm chart
+```shell
+helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --version $NGINX_HELM_VERSION --namespace ingress-nginx --create-namespace
+```
+
+Get default values
+```shell
+helm show values ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --version $NGINX_HELM_VERSION
+```
 
 ### Wazuh K8s
 
@@ -96,17 +110,21 @@ Generate certs for indexer and dashboard.
 kubectl apply -k kubernetes/wazuh/lke/
 ```
 
+Apply our custom values for ingress
+```shell
+helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --version $NGINX_HELM_VERSION --namespace ingress-nginx --values ./kubernetes/ingress/values.yaml
+```
+
 ## Access
 ### Wazuh Dashboard
 
 Get Dashboard URL:
 ```shell
-export WAZUH_DASHBOARD_IP=$(kubectl -n wazuh get svc dashboard -o json | jq -r '.status.loadBalancer.ingress[].ip')
-export WAZUH_DASHBOARD_PORT=$(kubectl -n wazuh get svc dashboard -o json | jq -r '.spec.ports[].port')
+export WAZUH_DASHBOARD_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
 ```
 
 ```shell
-echo "https://$WAZUH_DASHBOARD_IP:$WAZUH_DASHBOARD_PORT"
+echo "https://$WAZUH_DASHBOARD_IP"
 ```
 
 Dashboard credentials:
@@ -120,7 +138,7 @@ kubectl -n wazuh get secret dashboard-cred -o json | jq -r '.data.password' | ba
 ### Wazuh Server (For connecting agents)
 WAZUH_MANAGER:
 ```shell
-export WAZUH_MANAGER=$(kubectl -n wazuh get svc wazuh-workers -o json | jq -r '.status.loadBalancer.ingress[].ip')
+export WAZUH_MANAGER=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
 ```
 
 WAZUH_REGISTRATION_PASSWORD:
@@ -141,6 +159,10 @@ export TF_VAR_token=aabb...9900
 ```shell
 export TF_VAR_wazuh_manager=$WAZUH_MANAGER
 export TF_VAR_wazuh_registration_password=$WAZUH_REGISTRATION_PASSWORD
+```
+
+Use if not using ingress
+```shell
 export TF_VAR_wazuh_registration_server=$(kubectl -n wazuh get svc wazuh -o json | jq -r '.status.loadBalancer.ingress[].ip')
 ```
 

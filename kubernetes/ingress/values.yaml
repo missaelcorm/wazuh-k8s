@@ -1,0 +1,8 @@
+# -- TCP service key-value pairs
+## Ref: https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/exposing-tcp-udp-services.md
+##
+tcp:
+#  "8080": "default/example-tcp-svc:9000"
+  "1514": "wazuh/wazuh-workers:1514"
+  "1515": "wazuh/wazuh:1515"
+  "55000": "wazuh/wazuh:55000"

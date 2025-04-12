@@ -26,7 +26,7 @@ resource "linode_instance" "wazuh_clients" {
   metadata {
     user_data = base64encode(templatefile("${path.module}/scripts/user_data.tftpl", {
       WAZUH_MANAGER = var.wazuh_manager,
-      WAZUH_REGISTRATION_SERVER = var.wazuh_registration_server,
+      WAZUH_REGISTRATION_SERVER = var.wazuh_registration_server == "" ? var.wazuh_manager : var.wazuh_registration_server,
       WAZUH_REGISTRATION_PASSWORD = var.wazuh_registration_password,
       WAZUH_AGENT_NAME = "${var.instance_label_prefix}-${count.index + 1}"
     }))
