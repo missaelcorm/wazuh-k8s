@@ -120,12 +120,11 @@ helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.git
 
 Get Dashboard URL:
 ```shell
-export WAZUH_DASHBOARD_IP=$(kubectl -n wazuh get svc dashboard -o json | jq -r '.status.loadBalancer.ingress[].ip')
-export WAZUH_DASHBOARD_PORT=$(kubectl -n wazuh get svc dashboard -o json | jq -r '.spec.ports[].port')
+export WAZUH_DASHBOARD_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
 ```
 
 ```shell
-echo "https://$WAZUH_DASHBOARD_IP:$WAZUH_DASHBOARD_PORT"
+echo "https://$WAZUH_DASHBOARD_IP"
 ```
 
 Dashboard credentials:
