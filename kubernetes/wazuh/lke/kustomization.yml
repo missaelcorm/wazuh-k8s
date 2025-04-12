@@ -11,7 +11,7 @@ resources:
 - ../base
 - ./resources/ingress.yaml
 - ./resources/dashboard-proxy-svc.yaml
-
+- ./ingress/ingress-ns.yaml
 patches: 
 - path: ./patches/storage-class.yaml
 - path: ./patches/indexer-resources.yaml
@@ -19,3 +19,10 @@ patches:
 - path: ./patches/dashboard-svc.yaml
 - path: ./patches/wazuh-master-svc.yaml
 - path: ./patches/wazuh-workers-svc.yaml
+helmCharts:
+- name: ingress-nginx
+  repo: https://kubernetes.github.io/ingress-nginx
+  releaseName: ingress-nginx
+  namespace: ingress-nginx
+  version: 4.12.1
+  valuesFile: ingress/values.yaml

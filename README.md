@@ -4,6 +4,15 @@
 ### Terraform
 Reffer to: [terraform install](https://developer.hashicorp.com/terraform/install)
 
+### Kustomize
+```shell
+curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+```
+
+```shell
+mv kustomize /usr/local/bin/kustomize
+```
+
 ### Helm (for Linux x86_64/amd64)
 ```shell
 curl -LO https://get.helm.sh/helm-v3.17.2-linux-amd64.tar.gz
@@ -82,27 +91,6 @@ kubectl get nodes
 terraform destroy
 ```
 
-### Ningx Ingress
-Set Helm Chart Version
-```shell
-export NGINX_HELM_VERSION=4.12.1
-```
-
-Install ingress helm chart
-```shell
-helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --version $NGINX_HELM_VERSION --namespace ingress-nginx --create-namespace
-```
-
-Get default values
-```shell
-helm show values ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --version $NGINX_HELM_VERSION
-```
-
-Uninstall ingress
-```shell
-helm uninstall ingress-nginx -n ingress-nginx
-```
-
 ### Wazuh K8s
 
 Generate certs for indexer and dashboard.
@@ -112,12 +100,7 @@ Generate certs for indexer and dashboard.
 ```
 
 ```shell
-kubectl apply -k kubernetes/wazuh/lke/
-```
-
-Apply our custom values for ingress
-```shell
-helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --version $NGINX_HELM_VERSION --namespace ingress-nginx --values ./kubernetes/ingress/values.yaml
+kustomize build ./kubernetes/wazuh/lke/ --enable-helm | kubectl apply -f -
 ```
 
 ## Access
