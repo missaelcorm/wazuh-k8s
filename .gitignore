@@ -5,3 +5,4 @@ terraform.tfstate.backup
 *.pem
 *.csr
 *.srl
+kubernetes/wazuh/lke/charts
