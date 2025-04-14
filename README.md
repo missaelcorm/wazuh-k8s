@@ -176,6 +176,16 @@ cd agents/linux-amd64
 sudo WAZUH_MANAGER=x.x.x.x WAZUH_REGISTRATION_PASSWORD=xxx WAZUH_AGENT_NAME=hostname ./enroll-linux.sh
 ```
 
+Uninstall wazuh
+```shell
+sudo apt-get remove --purge wazuh-agent
+```
+
+```shell
+sudo systemctl disable wazuh-agent
+sudo systemctl daemon-reload
+```
+
 #### MacOS
 ```shell
 cd agents/macos-arm
