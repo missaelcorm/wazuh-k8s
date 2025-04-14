@@ -226,7 +226,7 @@ AGENTS=001,002,003
 ```
 
 ```shell
-export WAZUH_API_IP=$(kubectl -n wazuh get svc wazuh -o json | jq -r '.status.loadBalancer.ingress[].ip')
+export WAZUH_API_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
 export WAZUH_API_USERNAME=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.username' | base64 -d)
 export WAZUH_API_PASSWORD=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.password' | base64 -d)
 ```
