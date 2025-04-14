@@ -6,6 +6,53 @@ A comprehensive solution for deploying Wazuh on Kubernetes with Terraform automa
 
 ![Wazuh K8s Architecture](./assets/wazuh_k8s.png)
 
+### NGINX Ingress Architecture for Wazuh
+```mermaid
+flowchart TD
+    subgraph External
+    Agent1[Wazuh Agent 1]
+    Agent2[Wazuh Agent 2]
+    Browser[User Browser]
+    API[API Client]
+    end
+
+    subgraph "Kubernetes Cluster"
+        subgraph "Ingress Namespace"
+            Ingress[NGINX Ingress Controller\nSingle IP Address\nHTTPS + TCP Ports]
+        end
+        
+        subgraph "Wazuh Namespace"
+            Dashboard[Wazuh Dashboard\nPort 443/HTTPS]
+            Master[Wazuh Manager Master\nRegistration: 1515\nAPI: 55000]
+            Workers[Wazuh Workers\nEvents: 1514]
+            Indexer[Wazuh Indexer\nPort 9200]
+        end
+    end
+    
+    Agent1 -->|TCP 1514/1515| Ingress
+    Agent2 -->|TCP 1514/1515| Ingress
+    Browser -->|HTTPS| Ingress
+    API -->|HTTPS 55000| Ingress
+    
+    Ingress -->|HTTPS| Dashboard
+    Ingress -->|TCP 1515| Master
+    Ingress -->|TCP 1514| Workers
+    Ingress -->|TCP 55000| Master
+    
+    Dashboard -->|HTTPS 9200| Indexer
+    Master -->|TCP 9200| Indexer
+    Workers -->|TCP 9200| Indexer
+    
+    classDef k8s fill:#326ce5,color:white,stroke:#fff,stroke-width:1px;
+    classDef ingress fill:#009639,color:white;
+    classDef wazuh fill:#00a78e,color:white;
+    classDef external fill:#f9f9f9,stroke:#333,stroke-width:1px;
+    
+    class Ingress ingress;
+    class Dashboard,Master,Workers,Indexer wazuh;
+    class Agent1,Agent2,Browser,API external;
+```
+
 ### Single Endpoint Architecture
  
 One of the key improvements in this deployment is using an NGINX ingress controller to provide a **single IP address for all Wazuh services**:
