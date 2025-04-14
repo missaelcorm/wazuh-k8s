@@ -65,7 +65,7 @@ try {
 # Verify service is running
 $service = Get-Service -Name "Wazuh" -ErrorAction SilentlyContinue
 if ($service -and $service.Status -eq "Running") {
-    Write-Host "✓ Wazuh agent is running"
+    Write-Host "Wazuh agent is running"
 } else {
     Write-Warning "Wazuh agent service is not running. Check Windows Event Logs for details."
 }
