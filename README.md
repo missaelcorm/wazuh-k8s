@@ -135,6 +135,7 @@ export WAZUH_REGISTRATION_PASSWORD=$(kubectl -n wazuh get secret wazuh-authd-pas
 ```
 
 ### Wazuh Agents Registration
+#### Linodes (terraform)
 
 ```shell
 cd terraform/linode_instances
@@ -164,6 +165,59 @@ terraform plan -var-file="terraform.tfvars"
 
 ```shell
 terraform apply -var-file="terraform.tfvars"
+```
+
+#### Linux
+```shell
+cd agents/linux-amd64
+```
+
+```shell
+sudo WAZUH_MANAGER=x.x.x.x WAZUH_REGISTRATION_PASSWORD=xxx WAZUH_AGENT_NAME=hostname ./enroll-linux.sh
+```
+
+Uninstall wazuh
+```shell
+sudo apt-get remove --purge wazuh-agent
+```
+
+```shell
+sudo systemctl disable wazuh-agent
+sudo systemctl daemon-reload
+```
+
+#### MacOS
+```shell
+cd agents/macos-arm
+```
+
+```shell
+curl -LO https://packages.wazuh.com/4.x/macos/wazuh-agent-4.11.1-1.arm64.pkg
+```
+
+```shell
+sudo ./enroll-mac.sh <WAZUH_MANAGER> <WAZUH_REGISTRATION_SERVER> <WAZUH_REGISTRATION_PASSWORD> wazuh-agent-4.11.1-1.arm64.pkg
+```
+
+Uninstall wazuh
+```shell
+sudo ./uninstall-wazuh.sh
+```
+
+#### Windows
+```shell
+cd agents/windows-amd64
+```
+
+```shell
+# Run as Administrator
+.\Install-WazuhAgent.ps1 -WazuhManager <WAZUH_MANAGER> -RegistrationServer <WAZUH_REGISTRATION_SERVER> -RegistrationPassword <WAZUH_REGISTRATION_PASSWORD> -AgentName <WAZUH_AGENT_NAME>
+```
+
+Uninstall wazuh
+```shell
+# Run as Administrator
+msiexec.exe /x wazuh-agent-4.11.1-1.msi /qn
 ```
 
 ### Wazuh Agents Deregistration
