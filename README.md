@@ -18,14 +18,14 @@ flowchart TD
 
     subgraph "Kubernetes Cluster"
         subgraph "Ingress Namespace"
-            Ingress[NGINX Ingress Controller\nSingle IP Address\nHTTPS + TCP Ports]
+            Ingress[NGINX Ingress Controller<br>Single IP Address<br>HTTPS + TCP Ports]
         end
         
         subgraph "Wazuh Namespace"
-            Dashboard[Wazuh Dashboard\nPort 443/HTTPS]
-            Master[Wazuh Manager Master\nRegistration: 1515\nAPI: 55000]
-            Workers[Wazuh Workers\nEvents: 1514]
-            Indexer[Wazuh Indexer\nPort 9200]
+            Dashboard[Wazuh Dashboard<br>Port 443/HTTPS]
+            Master[Wazuh Manager Master<br>Registration: 1515<br>API: 55000]
+            Workers[Wazuh Workers<br>Events: 1514]
+            Indexer[Wazuh Indexer<br>Port 9200]
         end
     end
     
