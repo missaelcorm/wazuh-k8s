@@ -260,7 +260,7 @@ export WAZUH_API_USERNAME=$(kubectl -n wazuh get secret wazuh-api-cred -o json |
 export WAZUH_API_PASSWORD=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.password' | base64 -d)
 
 TOKEN=$(curl -u "$WAZUH_API_USERNAME:$WAZUH_API_PASSWORD" -k -X GET "https://$WAZUH_API_IP:55000/security/user/authenticate?raw=true")
-curl -k -X DELETE "https://$WAZUH_API_IP:55000/agents?pretty=true&older_than=0s&agents_list=$AGENTS$&status=all" -H "Authorization: Bearer $TOKEN"
+curl -k -X DELETE "https://$WAZUH_API_IP:55000/agents?pretty=true&older_than=0s&agents_list=$AGENTS&status=all" -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Uninstallation
