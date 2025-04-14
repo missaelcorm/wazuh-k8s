@@ -204,6 +204,22 @@ Uninstall wazuh
 sudo ./uninstall-wazuh.sh
 ```
 
+#### Windows
+```shell
+cd agents/windows-amd64
+```
+
+```shell
+# Run as Administrator
+.\Install-WazuhAgent.ps1 -WazuhManager <WAZUH_MANAGER> -RegistrationServer <WAZUH_REGISTRATION_SERVER> -RegistrationPassword <WAZUH_REGISTRATION_PASSWORD> -AgentName <WAZUH_AGENT_NAME>
+```
+
+Uninstall wazuh
+```shell
+# Run as Administrator
+msiexec.exe /x wazuh-agent-4.11.1-1.msi /qn
+```
+
 ### Wazuh Agents Deregistration
 ```shell
 AGENTS=001,002,003
