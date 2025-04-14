@@ -8,6 +8,7 @@ A comprehensive solution for deploying Wazuh on Kubernetes with Terraform automa
 
 ![Wazuh K8s Architecture](./assets/wazuh_k8s.png)
 
+### Required Ports
 | Component       | Port      | Protocol      | Purpose                             |
 | --------------- | --------- | ------------- | ----------------------------------- |
 | Wazuh server    | 1514      | TCP (default) | Agent connection service            |
