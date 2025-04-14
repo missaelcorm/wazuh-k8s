@@ -2,9 +2,21 @@
 ![Wazuh Cluster Architecture](./assets/deployment-architecture1.png)
 A comprehensive solution for deploying Wazuh on Kubernetes with Terraform automation.
 
+[Wazuh Components](https://documentation.wazuh.com/current/getting-started/components/index.html#components)
+
 ## Architecture
 
 ![Wazuh K8s Architecture](./assets/wazuh_k8s.png)
+
+| Component       | Port      | Protocol      | Purpose                             |
+| --------------- | --------- | ------------- | ----------------------------------- |
+| Wazuh server    | 1514      | TCP (default) | Agent connection service            |
+|                 | 1515      | TCP           | Agent enrollment service            |
+|                 | 1516      | TCP           | Wazuh cluster daemon                |
+|                 | 55000     | TCP           | Wazuh server RESTful API            |
+| Wazuh indexer   | 9200      | TCP           | Wazuh indexer RESTful API           |
+|                 | 9300-9400 | TCP           | Wazuh indexer cluster communication |
+| Wazuh dashboard | 443       | TCP           | Wazuh web user interface            |
 
 ### NGINX Ingress Architecture for Wazuh
 ```mermaid
@@ -63,6 +75,12 @@ One of the key improvements in this deployment is using an NGINX ingress control
 - **API access**: Port 55000 forwarded through ingress
 
 This differs from the default Wazuh Kubernetes deployment, which creates separate LoadBalancer services with different IP addresses for each component. Our approach significantly simplifies management and reduces costs by requiring only one load balancer.
+
+The architecture diagram above illustrates how all external traffic flows through a single NGINX ingress controller, which then routes to the appropriate services within the Kubernetes cluster. This design enables:
+- Simplified agent deployment and configuration (single endpoint)
+- Reduced infrastructure costs (one load balancer instead of multiple)
+- Streamlined TLS/SSL management
+- Unified logging and monitoring of all ingress traffic
 
 This architecture consists of:
 - Wazuh Manager (Master and Worker nodes) for log collection and analysis
