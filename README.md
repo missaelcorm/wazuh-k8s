@@ -124,7 +124,7 @@ helm --help
 
 ## Repository Setup
 
-This repository uses Wazuh K8s version v4.11.1. If you need to update the base configurations, follow these steps:
+This deployment is based on Wazuh K8s version v4.11.1 from the [official Wazuh Kubernetes repository](https://github.com/wazuh/wazuh-kubernetes). We used the base configuration from this repo and customized it for our specific deployment scenario, particularly focusing on implementing the single-IP approach with NGINX ingress.
 
 ```shell
 export GIT_TAG=v4.11.1
@@ -132,6 +132,15 @@ cd /tmp
 git clone https://github.com/wazuh/wazuh-kubernetes --branch $GIT_TAG
 cp -r /tmp/wazuh-kubernetes/wazuh/* ./kubernetes/wazuh/base
 ```
+
+After copying the base files, we've applied our own customizations using Kustomize patches to implement the single-IP architecture with NGINX ingress controller, which differs from the multiple LoadBalancer approach in the original repository.
+
+Key customizations include:
+
+- Modified service types from LoadBalancer to ClusterIP
+- Added NGINX ingress configuration with TCP forwarding
+- Implemented dashboard proxy service
+- Adjusted resource limits for better performance
 
 ## Deployment
 
