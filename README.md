@@ -1,121 +1,201 @@
-# wazuh-k8s
+# Wazuh Kubernetes Deployment
+![Wazuh Cluster Architecture](./assets/deployment-architecture1.png)
+A comprehensive solution for deploying Wazuh on Kubernetes with Terraform automation.
+
+[Wazuh Components](https://documentation.wazuh.com/current/getting-started/components/index.html#components)
+
+## Architecture
+
+![Wazuh K8s Architecture](./assets/wazuh_k8s.png)
+
+### Required Ports
+| Component       | Port      | Protocol      | Purpose                             |
+| --------------- | --------- | ------------- | ----------------------------------- |
+| Wazuh server    | 1514      | TCP (default) | Agent connection service            |
+|                 | 1515      | TCP           | Agent enrollment service            |
+|                 | 1516      | TCP           | Wazuh cluster daemon                |
+|                 | 55000     | TCP           | Wazuh server RESTful API            |
+| Wazuh indexer   | 9200      | TCP           | Wazuh indexer RESTful API           |
+|                 | 9300-9400 | TCP           | Wazuh indexer cluster communication |
+| Wazuh dashboard | 443       | TCP           | Wazuh web user interface            |
+
+### NGINX Ingress Architecture for Wazuh
+```mermaid
+flowchart TD
+    subgraph External
+    Agent1[Wazuh Agent 1]
+    Agent2[Wazuh Agent 2]
+    Browser[User Browser]
+    API[API Client]
+    end
+
+    subgraph "Kubernetes Cluster"
+        subgraph "Ingress Namespace"
+            Ingress[NGINX Ingress Controller<br>Single IP Address<br>HTTPS + TCP Ports]
+        end
+        
+        subgraph "Wazuh Namespace"
+            Dashboard[Wazuh Dashboard<br>Port 443/HTTPS]
+            Master[Wazuh Manager Master<br>Registration: 1515<br>API: 55000]
+            Workers[Wazuh Workers<br>Events: 1514]
+            Indexer[Wazuh Indexer<br>Port 9200]
+        end
+    end
+    
+    Agent1 -->|TCP 1514/1515| Ingress
+    Agent2 -->|TCP 1514/1515| Ingress
+    Browser -->|HTTPS| Ingress
+    API -->|HTTPS 55000| Ingress
+    
+    Ingress -->|HTTPS| Dashboard
+    Ingress -->|TCP 1515| Master
+    Ingress -->|TCP 1514| Workers
+    Ingress -->|TCP 55000| Master
+    
+    Dashboard -->|HTTPS 9200| Indexer
+    Master -->|TCP 9200| Indexer
+    Workers -->|TCP 9200| Indexer
+    
+    classDef k8s fill:#326ce5,color:white,stroke:#fff,stroke-width:1px;
+    classDef ingress fill:#009639,color:white;
+    classDef wazuh fill:#00a78e,color:white;
+    classDef external fill:#f9f9f9,stroke:#333,stroke-width:1px;
+    
+    class Ingress ingress;
+    class Dashboard,Master,Workers,Indexer wazuh;
+    class Agent1,Agent2,Browser,API external;
+```
+
+### Single Endpoint Architecture
+ 
+One of the key improvements in this deployment is using an NGINX ingress controller to provide a **single IP address for all Wazuh services**:
+
+- **Dashboard access**: HTTPS on the same IP
+- **Agent registration**: TCP port 1515 forwarded through ingress
+- **Agent event collection**: TCP port 1514 forwarded through ingress
+- **API access**: Port 55000 forwarded through ingress
+
+This differs from the default Wazuh Kubernetes deployment, which creates separate LoadBalancer services with different IP addresses for each component. Our approach significantly simplifies management and reduces costs by requiring only one load balancer.
+
+The architecture diagram above illustrates how all external traffic flows through a single NGINX ingress controller, which then routes to the appropriate services within the Kubernetes cluster. This design enables:
+- Simplified agent deployment and configuration (single endpoint)
+- Reduced infrastructure costs (one load balancer instead of multiple)
+- Streamlined TLS/SSL management
+- Unified logging and monitoring of all ingress traffic
+
+This architecture consists of:
+- Wazuh Manager (Master and Worker nodes) for log collection and analysis
+- Wazuh Indexer for storage and search
+- Wazuh Dashboard for visualization
+- Kubernetes running on Linode Kubernetes Engine (LKE)
+- Agent deployment automation for Linux, MacOS, and Windows
+
 
 ## Prerequisites
-### Terraform
-Reffer to: [terraform install](https://developer.hashicorp.com/terraform/install)
+
+### Required Tools
+
+| Tool | Minimum Version | Installation Guide |
+|------|-----------------|-------------------|
+| Terraform | v1.0.0+ | [Installation Guide](https://developer.hashicorp.com/terraform/install) |
+| kubectl | v1.20.0+ | [Installation Guide](https://kubernetes.io/docs/tasks/tools/) |
+| Kustomize | v4.0.0+ | [Installation Guide](#kustomize) |
+| Helm | v3.8.0+ | [Installation Guide](#helm) |
+
+### Linode Requirements
+- A Linode account
+- Linode API token with read/write access
 
 ### Kustomize
-```shell
-curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
-```
 
 ```shell
-mv kustomize /usr/local/bin/kustomize
+curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+sudo mv kustomize /usr/local/bin/kustomize
 ```
 
-### Helm (for Linux x86_64/amd64)
+### Helm
+
 ```shell
 curl -LO https://get.helm.sh/helm-v3.17.2-linux-amd64.tar.gz
-```
-
-```shell
 tar -zxvf helm-v3.17.2-linux-amd64.tar.gz
-```
-
-```shell
-mv linux-amd64/helm /usr/local/bin/helm
-```
-
-```shell
+sudo mv linux-amd64/helm /usr/local/bin/helm
 helm --help
 ```
 
-## Repo Setup
-Wazuh K8s version used: v4.11.1
-Repository Tag: https://github.com/wazuh/wazuh-kubernetes/tree/v4.11.1
+## Repository Setup
 
+This deployment is based on Wazuh K8s version v4.11.1 from the [official Wazuh Kubernetes repository](https://github.com/wazuh/wazuh-kubernetes). We used the base configuration from this repo and customized it for our specific deployment scenario, particularly focusing on implementing the single-IP approach with NGINX ingress.
 
 ```shell
 export GIT_TAG=v4.11.1
-```
-
-```shell
 cd /tmp
 git clone https://github.com/wazuh/wazuh-kubernetes --branch $GIT_TAG
-```
-
-```shell
 cp -r /tmp/wazuh-kubernetes/wazuh/* ./kubernetes/wazuh/base
 ```
 
+After copying the base files, we've applied our own customizations using Kustomize patches to implement the single-IP architecture with NGINX ingress controller, which differs from the multiple LoadBalancer approach in the original repository.
+
+Key customizations include:
+
+- Modified service types from LoadBalancer to ClusterIP
+- Added NGINX ingress configuration with TCP forwarding
+- Implemented dashboard proxy service
+- Adjusted resource limits for better performance
+
 ## Deployment
-### LKE K8s Cluster (Linode Kubernetes Engine) Setup
+
+### 1. LKE K8s Cluster Setup
 
 ```shell
 cd terraform/lke-cluster
-```
-
-```shell
-export TF_VAR_token=aabb...9900
-```
-
-```shell
+export TF_VAR_token=your_linode_api_token
 terraform init
-```
-
-```shell
 terraform plan -var-file="terraform.tfvars"
-```
-
-```shell
 terraform apply -var-file="terraform.tfvars"
 ```
 
 #### Connect to LKE
-```shell
-export KUBE_VAR=`terraform output kubeconfig` && echo $KUBE_VAR | base64 -di > lke-cluster-config.yaml
-```
 
 ```shell
+export KUBE_VAR=`terraform output kubeconfig` && echo $KUBE_VAR | base64 -di > lke-cluster-config.yaml
 export KUBECONFIG=$(realpath lke-cluster-config.yaml)
 ```
 
-Now you'll be able to interact with the K8s cluster.
-For example:
+Verify connectivity:
 ```shell
 kubectl get nodes
 ```
 
-#### Destroy LKE Cluster
-```shell
-terraform destroy
-```
+### 2. Generate Certificates
 
-### Wazuh K8s
-
-Generate certs for indexer and dashboard.
+Generate certificates for indexer and dashboard:
 ```shell
 ./kubernetes/wazuh/base/certs/dashboard_http/generate_certs.sh
 ./kubernetes/wazuh/base/certs/indexer_cluster/generate_certs.sh
 ```
 
+### 3. Deploy Wazuh
+
 ```shell
 kustomize build ./kubernetes/wazuh/lke/ --enable-helm | kubectl apply -f -
 ```
 
-## Access
+Wait for all pods to be running:
+```shell
+kubectl -n wazuh get pods --watch
+```
+
+## Access the Deployment
+
 ### Wazuh Dashboard
 
 Get Dashboard URL:
 ```shell
 export WAZUH_DASHBOARD_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
-```
-
-```shell
 echo "https://$WAZUH_DASHBOARD_IP"
 ```
 
-Dashboard credentials:
+Get credentials:
 ```shell
 # Username
 kubectl -n wazuh get secret dashboard-cred -o json | jq -r '.data.username' | base64 -d
@@ -123,118 +203,115 @@ kubectl -n wazuh get secret dashboard-cred -o json | jq -r '.data.username' | ba
 kubectl -n wazuh get secret dashboard-cred -o json | jq -r '.data.password' | base64 -d
 ```
 
-### Wazuh Server (For connecting agents)
-WAZUH_MANAGER:
-```shell
-export WAZUH_MANAGER=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
-```
+### Wazuh Manager Info (For Agent Connection)
 
-WAZUH_REGISTRATION_PASSWORD:
 ```shell
+# Manager IP
+export WAZUH_MANAGER=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
+# Registration Password
 export WAZUH_REGISTRATION_PASSWORD=$(kubectl -n wazuh get secret wazuh-authd-pass -o json | jq -r '.data."authd.pass"' | base64 -d)
 ```
 
-### Wazuh Agents Registration
-#### Linodes (terraform)
+## Agent Deployment
 
-```shell
-cd terraform/linode_instances
-```
+### Linux Agents
 
-```shell
-export TF_VAR_token=aabb...9900
-```
-
-```shell
-export TF_VAR_wazuh_manager=$WAZUH_MANAGER
-export TF_VAR_wazuh_registration_password=$WAZUH_REGISTRATION_PASSWORD
-```
-
-Use if not using ingress
-```shell
-export TF_VAR_wazuh_registration_server=$(kubectl -n wazuh get svc wazuh -o json | jq -r '.status.loadBalancer.ingress[].ip')
-```
-
-```shell
-terraform init
-```
-
-```shell
-terraform plan -var-file="terraform.tfvars"
-```
-
-```shell
-terraform apply -var-file="terraform.tfvars"
-```
-
-#### Linux
 ```shell
 cd agents/linux-amd64
-```
-
-```shell
 sudo WAZUH_MANAGER=x.x.x.x WAZUH_REGISTRATION_PASSWORD=xxx WAZUH_AGENT_NAME=hostname ./enroll-linux.sh
 ```
 
-Uninstall wazuh
-```shell
-sudo apt-get remove --purge wazuh-agent
-```
+### MacOS Agents
 
 ```shell
+cd agents/macos-arm
+curl -LO https://packages.wazuh.com/4.x/macos/wazuh-agent-4.11.1-1.arm64.pkg
+sudo ./enroll-mac.sh <WAZUH_MANAGER> <WAZUH_REGISTRATION_SERVER> <WAZUH_REGISTRATION_PASSWORD> wazuh-agent-4.11.1-1.arm64.pkg
+```
+
+### Windows Agents
+
+```powershell
+cd agents/windows-amd64
+# Run as Administrator
+.\enroll-windows.ps1- -WazuhManager <WAZUH_MANAGER> -RegistrationServer <WAZUH_REGISTRATION_SERVER> -RegistrationPassword <WAZUH_REGISTRATION_PASSWORD> -AgentName <WAZUH_AGENT_NAME>
+```
+
+### Automated Agent Deployment (Linode VMs)
+
+```shell
+cd terraform/linode_instances
+export TF_VAR_token=your_linode_api_token
+export TF_VAR_wazuh_manager=$WAZUH_MANAGER
+export TF_VAR_wazuh_registration_password=$WAZUH_REGISTRATION_PASSWORD
+terraform init
+terraform plan -var-file="terraform.tfvars"
+terraform apply -var-file="terraform.tfvars"
+```
+
+## Agent Management
+
+### Deregistering Agents
+
+```shell
+AGENTS=001,002,003
+export WAZUH_API_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
+export WAZUH_API_USERNAME=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.username' | base64 -d)
+export WAZUH_API_PASSWORD=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.password' | base64 -d)
+
+TOKEN=$(curl -u "$WAZUH_API_USERNAME:$WAZUH_API_PASSWORD" -k -X GET "https://$WAZUH_API_IP:55000/security/user/authenticate?raw=true")
+curl -k -X DELETE "https://$WAZUH_API_IP:55000/agents?pretty=true&older_than=0s&agents_list=$AGENTS&status=all" -H "Authorization: Bearer $TOKEN"
+```
+
+## Uninstallation
+
+### Uninstall Agents
+
+#### Linux
+```shell
+sudo apt-get remove --purge wazuh-agent
 sudo systemctl disable wazuh-agent
 sudo systemctl daemon-reload
 ```
 
 #### MacOS
 ```shell
-cd agents/macos-arm
-```
-
-```shell
-curl -LO https://packages.wazuh.com/4.x/macos/wazuh-agent-4.11.1-1.arm64.pkg
-```
-
-```shell
-sudo ./enroll-mac.sh <WAZUH_MANAGER> <WAZUH_REGISTRATION_SERVER> <WAZUH_REGISTRATION_PASSWORD> wazuh-agent-4.11.1-1.arm64.pkg
-```
-
-Uninstall wazuh
-```shell
-sudo ./uninstall-wazuh.sh
+sudo ./agents/macos-arm/uninstall-wazuh.sh
 ```
 
 #### Windows
-```shell
-cd agents/windows-amd64
-```
-
-```shell
-# Run as Administrator
-.\Install-WazuhAgent.ps1 -WazuhManager <WAZUH_MANAGER> -RegistrationServer <WAZUH_REGISTRATION_SERVER> -RegistrationPassword <WAZUH_REGISTRATION_PASSWORD> -AgentName <WAZUH_AGENT_NAME>
-```
-
-Uninstall wazuh
-```shell
+```powershell
 # Run as Administrator
 msiexec.exe /x wazuh-agent-4.11.1-1.msi /qn
 ```
 
-### Wazuh Agents Deregistration
-```shell
-AGENTS=001,002,003
-```
+### Delete Kubernetes Resources
 
 ```shell
-export WAZUH_API_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].ip')
-export WAZUH_API_USERNAME=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.username' | base64 -d)
-export WAZUH_API_PASSWORD=$(kubectl -n wazuh get secret wazuh-api-cred -o json | jq -r '.data.password' | base64 -d)
+kustomize build ./kubernetes/wazuh/lke/ --enable-helm | kubectl delete -f -
 ```
 
-```shell
-TOKEN=$(curl -u "$WAZUH_API_USERNAME:$WAZUH_API_PASSWORD" -k -X GET "https://$WAZUH_API_IP:55000/security/user/authenticate?raw=true")
-```
+### Destroy LKE Cluster
 
 ```shell
-curl -k -X DELETE "https://$WAZUH_API_IP:55000/agents?pretty=true&older_than=0s&agents_list=$AGENTS$&status=all" -H  "Authorization: Bearer $TOKEN"
+cd terraform/lke-cluster
+terraform destroy -var-file="terraform.tfvars"
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Certificates
+- If you're seeing certificate errors in the dashboard, regenerate certificates and restart the pods:
+  ```bash
+  kubectl -n wazuh delete pod -l app=wazuh-dashboard
+  ```
+
+#### Agent Connectivity
+- If agents cannot connect, ensure firewall rules allow traffic to ports 1515 and 1514
+- Verify the registration password is correct
+
+#### Pods Stuck in Pending
+- Check storage class: `kubectl get sc`
+- Verify PVC creation: `kubectl -n wazuh get pvc`
