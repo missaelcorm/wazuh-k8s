@@ -16,6 +16,7 @@ patches:
 - path: ./patches/storage-class.yaml
 - path: ./patches/indexer-resources.yaml
 - path: ./patches/wazuh-resources.yaml
+- path: ./patches/wazuh-master-resources.yaml
 - path: ./patches/dashboard-svc.yaml
 - path: ./patches/wazuh-master-svc.yaml
 - path: ./patches/wazuh-workers-svc.yaml
